@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Perfil</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            position: relative;
+            overflow: hidden;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            border: 1px solid #4caf50; /* Updated border color */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5); /* Updated shadow color */
+            background-color: #ffffff;
+            z-index: 1;
+        }
+        .card {
+            width: 48%;
+        }
+        .card-title {
+            font-size: 1.5rem;
+            color: #388e3c; /* Updated title color */
+        }
+        .card-text {
+            font-size: 1.2rem;
+            color: black; /* Text color set to black */
+        }
+        .btn-primary {
+            background-color: #4caf50; /* Updated button color */
+            border-color: #4caf50; /* Updated button border color */
+        }
+        .btn-primary:hover {
+            background-color: #388e3c; /* Updated button hover color */
+            border-color: #388e3c; /* Updated button hover border color */
+        }
+        .list-group-item {
+            border: 1px solid #4caf50; /* Updated list item border color */
+        }
+        .top-left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+        .background {
+            position: absolute;
+            inset: 0;
+            z-index: -10;
+            height: 100%;
+            width: 100%;
+            background: radial-gradient(125% 125% at 50% 10%, #fff 40%, #4caf50 100%);
+        }
+        .equip-message {
+            color: #388e3c; /* Message color */
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const id = localStorage.getItem('id');
+            if (id) {
+                function loadUserProfile() {
+                    $.getJSON('http://localhost:8080/dsaApp/users/' + id)
+                        .done(function (data) {
+                            $('#username').text(data.username);
+                            $('#email').text(data.email);
+                            $('#dinero').text(data.dinero + '€');
+                            $('#maxpoints').text(data.puntos);
+                            const profileImage = $('<img>').attr('src', 'imagenes/' + data.actSkinUser + '.jpg').attr('alt', 'Profile Image').attr('width', '150').attr('height', '150').on('error', function () {
+                                $(this).attr('src', 'imagenes/avatar1.jpg');
+                            });
+                            $('#profileImageContainer').empty().append(profileImage);
+                        })
+                        .fail(function (error) {
+                            console.error("Error fetching user data:", error);
+                        });
+                }
+
+                loadUserProfile();
+
+                $.getJSON('http://localhost:8080/dsaApp/users/' + id + '/products')
+                    .done(function (data) {
+                        const productList = $('#productList');
+                        productList.empty();
+                        $.each(data, function (index, product) {
+                            const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
+                            const productImage = $('<img>').attr('src', 'imagenes/' + product.nameProduct + '.jpg').attr('alt', product.nameProduct).attr('width', '50').attr('height', '50').on('error', function () {
+                                $(this).attr('src', 'imagenes/MejoraVida.jpg');
+                            });
+                            listItem.append(productImage);
+                            listItem.append($('<span></span>').text(product.nameProduct));
+                            const button = product.nameProduct.toLowerCase().includes('avatar') ?
+                                $('<button class="btn btn-primary btn-sm">Equipar Skin</button>') :
+                                $('<button class="btn btn-primary btn-sm">Equipar</button>');
+                            button.on('click', function () {
+                                if (product.nameProduct.toLowerCase().includes('avatar')) {
+                                    $.getJSON('http://localhost:8080/dsaApp/users/' + id)
+                                        .done(function (userData) {
+                                            userData.actSkinUser = product.nameProduct;
+                                            $.ajax({
+                                                url: 'http://localhost:8080/dsaApp/users/update2',
+                                                type: 'PUT',
+                                                contentType: 'application/json',
+                                                data: JSON.stringify(userData),
+                                                success: function (response) {
+                                                    loadUserProfile();
+                                                    $('#equipMessage').text('Equipado correctamente').show();
+                                                },
+                                                error: function (error) {
+                                                    console.error("Error updating user skin:", error);
+                                                }
+                                            });
+                                        })
+                                        .fail(function (error) {
+                                            console.error("Error fetching user data:", error);
+                                        });
+                                } else {
+                                    $('#equipMessage').text('Equipado correctamente').show();
+                                }
+                            });
+                            listItem.append(button);
+                            productList.append(listItem);
+                        });
+                    })
+                    .fail(function (error) {
+                        console.error("Error fetching purchased products:", error);
+                    });
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+</head>
+<body>
+<a href="home.html" class="top-left">
+    <img src="imagenes/Flecha.jpg" alt="Logo" width="50" height="50">
+</a>
+<div class="container">
+    <div class="card">
+        <div class="card-body">
+            <div id="profileImageContainer" class="text-center mb-3">
+                <!-- Profile image will be appended here -->
+            </div>
+            <h5 class="card-title">Información del Usuario</h5>
+            <p class="card-text"><strong>Username:</strong> <span id="username"></span></p>
+            <p class="card-text"><strong>Email:</strong> <span id="email"></span></p>
+            <p class="card-text"><strong>Dinero:</strong> <span id="dinero"></span></p>
+            <p class="card-text"><strong>Max Points:</strong> <span id="maxpoints"></span></p>
+            <a href="editarPerfil.html" class="btn btn-primary mt-3">Editar Perfil</a>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Productos Comprados</h5>
+            <ul id="productList" class="list-group">
+                <!-- Purchased products will be appended here -->
+            </ul>
+            <div id="equipMessage" class="equip-message" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+<div class="background"></div>
+</body>
+</html>

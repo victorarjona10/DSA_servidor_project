@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Productos</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            position: relative;
+            overflow: hidden;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            width: 80%;
+            border: 1px solid #4caf50; /* Updated border color */
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5); /* Updated shadow color */
+            background-color: #ffffff;
+            z-index: 1;
+        }
+        .card {
+            width: 48%;
+        }
+        .card-title {
+            font-size: 1.5rem;
+            color: #388e3c; /* Updated title color */
+        }
+        .card-text {
+            font-size: 1.2rem;
+            color: black; /* Text color set to black */
+        }
+        .btn-primary {
+            background-color: #4caf50; /* Updated button color */
+            border-color: #4caf50; /* Updated button border color */
+        }
+        .btn-primary:hover {
+            background-color: #388e3c; /* Updated button hover color */
+            border-color: #388e3c; /* Updated button hover border color */
+        }
+        .list-group-item {
+            border: 1px solid #4caf50; /* Updated list item border color */
+        }
+        .top-left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+        .background {
+            position: absolute;
+            inset: 0;
+            z-index: -10;
+            height: 100%;
+            width: 100%;
+            background: radial-gradient(125% 125% at 50% 10%, #fff 40%, #4caf50 100%);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            history.replaceState(null, null, 'home.html');
+
+            const user = localStorage.getItem('username');
+            const id = localStorage.getItem('id');
+            let dinero;
+
+            if (user) {
+                $("#usernameDisplay").append(user);
+                obtenerDinero(id);
+                obtenerProductos(id);
+
+                $.getJSON('http://localhost:8080/dsaApp/users/' + id + '/products')
+                    .done(function (data) {
+                        $("#compradosList").show();
+                        $("#compradosHeader").show();
+                        $.each(data, function (i, product) {
+                            const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
+                            const productImage = $('<img>').attr('src', 'imagenes/' + product.nameProduct + '.jpg').attr('alt', product.nameProduct).attr('width', '50').attr('height', '50').on('error', function () {
+                                $(this).attr('src', 'imagenes/MejoraVida.jpg');
+                            });
+                            listItem.append(productImage);
+                            listItem.append($('<span></span>').text(product.nameProduct));
+                            $("#compradosList").append(listItem);
+                        });
+                    })
+                    .fail(function (error) {
+                        console.error("Error fetching purchased products:", error);
+                    });
+            }
+
+            $('#productsTable').on("click", ".btn-transparent", function () {
+                const row = $(this).closest('tr');
+                const productId = +row.find('td').eq(0).text();
+                const precio = parseFloat(row.find('td').eq(2).text());
+
+                if (dinero >= precio && dinero > 0) {
+                    $.ajax({
+                        url: 'http://localhost:8080/dsaApp/users/' + id + '/products/' + productId,
+                        method: 'POST',
+                        contentType: 'application/json'
+                    })
+                        .done(function (response) {
+                            $("#compradosList").show();
+                            $("#compradosHeader").show();
+                            const listItem = $('<li class="list-group-item d-flex justify-content-between align-items-center"></li>');
+                            const productImage = $('<img>').attr('src', 'imagenes/' + response.nameProduct + '.jpg').attr('alt', response.nameProduct).attr('width', '50').attr('height', '50').on('error', function () {
+                                $(this).attr('src', 'imagenes/MejoraVida.jpg');
+                            });
+                            listItem.append(productImage);
+                            listItem.append($('<span></span>').text(response.nameProduct));
+                            $("#compradosList").append(listItem);
+                            $('#message').text('¡Producto añadido con éxito!');
+                            obtenerDinero(id);
+                            obtenerProductos(id);
+                        })
+                        .fail(function (error) {
+                            console.log("Error: ", error.message);
+                        });
+                } else {
+                    $("#message").text("Eres pobre");
+                }
+            });
+
+            function obtenerDinero(id) {
+                $.ajax({
+                    url: 'http://localhost:8080/dsaApp/users/' + id + '/dinero',
+                    type: 'GET',
+                    success: function (response) {
+                        console.log("Dinero:", response);
+                        dinero = parseInt(response);
+                        $('#dineroDisplay').html('<b>Dinero:</b> ' + dinero + "€");
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error fetching dinero:", error);
+                    }
+                });
+            }
+
+            function obtenerProductos(id) {
+                $('#productsTable tbody').empty();
+                $.getJSON('http://localhost:8080/dsaApp/objects/' + id + '/web')
+                    .done(function (data) {
+                        if (data.length === 0) {
+                            $('#message').text('Ya tienes en tu inventario todos los productos disponibles, ¡Enhorabuena! Estate atento para futuros avances.');
+                        } else {
+                            $.each(data, function (index, product) {
+                                const row = $('<tr></tr>');
+                                const productImage = $('<img>').attr('src', 'imagenes/' + product.nameProduct + '.jpg').attr('alt', product.nameProduct).attr('width', '50').attr('height', '50').on('error', function () {
+                                    $(this).attr('src', 'imagenes/MejoraVida.jpg');
+                                });
+                                row.append($('<td></td>').text(product.id));
+                                row.append($('<td></td>').append(productImage).append(' ' + product.nameProduct));
+                                row.append($('<td></td>').text(product.price + "€"));
+                                const btnCarro = $('<button type="button" class="btn btn-transparent"><img src="imagenes/CarritoCompra.png" alt="Logo" width="35" height="35"></button>');
+                                const buttonCell = $('<td></td>').append(btnCarro);
+                                row.append(buttonCell);
+                                $('#productsTable tbody').append(row);
+                            });
+                        }
+                    })
+                    .fail(function (error) {
+                        $('#message').text("Error: " + error.message);
+                    });
+            }
+        });
+    </script>
+</head>
+<body>
+<a href="home.html" class="top-left">
+    <img src="imagenes/Flecha.jpg" alt="Logo" width="50" height="50">
+</a>
+<div class="container">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Lista de Productos</h5>
+            <table id="productsTable" class="table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Precio</th>
+                    <th>Comprar</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+            <h5 id="message" class="ml-5"></h5>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Productos Comprados</h5>
+            <ul id="compradosList" class="list-group">
+                <!-- Purchased products will be appended here -->
+            </ul>
+            <div id="usernameDisplay"><b>Usuario: </b></div>
+            <div id="dineroDisplay"><b>Dinero: </b></div>
+        </div>
+    </div>
+</div>
+<div class="background"></div>
+</body>
+</html>

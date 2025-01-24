@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f8ff;
+            position: relative;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.5); /* Updated shadow color */
+            background-color: #ffffff;
+            z-index: 1;
+        }
+        input {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4caf50; /* Updated button color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #388e3c; /* Updated button hover color */
+        }
+        .message {
+            margin-top: 20px;
+            font-size: 16px;
+        }
+        .success {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        .top-left {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+        }
+        .background {
+            position: absolute;
+            inset: 0;
+            z-index: -10;
+            height: 100%;
+            width: 100%;
+            background: radial-gradient(125% 125% at 50% 10%, #fff 40%, #4caf50 100%);
+        }
+    </style>
+</head>
+<body>
+<a href="index.html" class="top-left">
+    <img src="imagenes/Flecha.jpg" alt="Logo" width="50" height="50">
+</a>
+<div class="container">
+    <h1>Register</h1>
+    <p>Introduce tu Correo y tu nombre de Usuario</p>
+    <form id="registerForm">
+        <input type="email" id="email" name="email" placeholder="Correo electrónico" required>
+        <input type="text" id="username" name="username" placeholder="Usuario" required>
+        <p>Introduce tu Contraseña</p>
+        <input type="password" id="password" name="password" placeholder="Contraseña" required>
+        <input type="password" id="pwd2" name="pwd2" placeholder="Repita la Contraseña" required>
+        <button type="submit" id="registerButton">Registrarse</button>
+    </form>
+    <div id="message" class="message"></div>
+</div>
+<div class="background"></div>
+<script>
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const email = document.getElementById('email').value;
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const pwd2 = document.getElementById('pwd2').value;
+
+        if (password !== pwd2) {
+            document.getElementById('message').textContent = "Revisa que tu contraseña sea igual";
+            document.getElementById('message').classList.add('error');
+            return;
+        }
+
+        const formData = new URLSearchParams();
+        formData.append('email', email);
+        formData.append('username', username);
+        formData.append('password', password);
+
+        fetch('http://localhost:8080/dsaApp/users/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: formData.toString(),
+        })
+        .then(response => {
+            if (response.status === 201) {
+                return response.json();
+            } else {
+                throw new Error('Registro fallido: Verifica tus datos');
+            }
+        })
+        .then(data => {
+            document.getElementById('message').textContent = 'Registro exitoso';
+            document.getElementById('message').classList.add('success');
+            console.log('Usuario registrado:', data);
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        })
+        .catch(error => {
+            document.getElementById('message').textContent = error.message;
+            document.getElementById('message').classList.add('error');
+            console.error('Error:', error);
+        });
+    });
+</script>
+</body>
+</html>
